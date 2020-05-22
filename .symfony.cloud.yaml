@@ -9,10 +9,14 @@ runtime:
         - sodium
         - iconv
         - ctype
-        
+        - pdo_pgsql
+
 
 build:
     flavor: none
+
+relationships:
+    database: "db:postgresql"
 
 web:
     locations:
@@ -31,4 +35,3 @@ hooks:
         set -x -e
 
         curl -s https://get.symfony.com/cloud/configurator | (>&2 bash)
-        
