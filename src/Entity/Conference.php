@@ -8,6 +8,7 @@ use App\Repository\ConferenceRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use function sprintf;
 
 /**
  * @ORM\Entity(repositoryClass=ConferenceRepository::class)
@@ -120,5 +121,10 @@ class Conference
         }
 
         return $this;
+    }
+
+    public function __toString(): string
+    {
+        return sprintf('%s %s', $this->city, $this->year);
     }
 }
