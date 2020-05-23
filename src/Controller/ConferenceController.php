@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Entity\Comment;
 use App\Entity\Conference;
+use App\Form\CommentFormType;
 use App\Repository\CommentRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -52,10 +54,11 @@ class ConferenceController extends AbstractController
         $paginator = $commentRepository->getCommentPaginator($conference, $offset);
 
         return new Response($this->twig->render('conference/show.html.twig', [
-            'conference' => $conference,
-            'comments'   => $paginator,
-            'previous'   => $offset - CommentRepository::PAGINATOR_PER_PAGE,
-            'next'       => min(count($paginator), $offset + CommentRepository::PAGINATOR_PER_PAGE)
+            'conference'   => $conference,
+            'comments'     => $paginator,
+            'previous'     => $offset - CommentRepository::PAGINATOR_PER_PAGE,
+            'next'         => min(count($paginator), $offset + CommentRepository::PAGINATOR_PER_PAGE),
+            'comment_form' => $this->createForm(CommentFormType::class, new Comment())->createView()
         ]));
     }
 }
