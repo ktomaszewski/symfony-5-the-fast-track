@@ -23,9 +23,13 @@ class ConferenceController extends AbstractController
     /** @var Environment */
     private $twig;
 
-    public function __construct(Environment $twig)
+    /** @var ConferenceRepository */
+    private $conferenceRepository;
+
+    public function __construct(Environment $twig, ConferenceRepository $conferenceRepository)
     {
         $this->twig = $twig;
+        $this->conferenceRepository = $conferenceRepository;
     }
 
     /**
@@ -35,10 +39,10 @@ class ConferenceController extends AbstractController
      * @throws RuntimeError
      * @throws SyntaxError
      */
-    public function index(ConferenceRepository $conferenceRepository): Response
+    public function index(): Response
     {
         return new Response($this->twig->render('conference/index.html.twig', [
-            'conferences' => $conferenceRepository->findAll()
+            'conferences' => $this->conferenceRepository->findAll()
         ]));
     }
 
@@ -55,10 +59,11 @@ class ConferenceController extends AbstractController
         $paginator = $commentRepository->getCommentPaginator($conference, $offset);
 
         return new Response($this->twig->render('conference/show.html.twig', [
-            'conference' => $conference,
-            'comments'   => $paginator,
-            'previous'   => $offset - CommentRepository::PAGINATOR_PER_PAGE,
-            'next'       => min(count($paginator), $offset + CommentRepository::PAGINATOR_PER_PAGE)
+            'conferences' => $this->conferenceRepository->findAll(),
+            'conference'  => $conference,
+            'comments'    => $paginator,
+            'previous'    => $offset - CommentRepository::PAGINATOR_PER_PAGE,
+            'next'        => min(count($paginator), $offset + CommentRepository::PAGINATOR_PER_PAGE)
         ]));
     }
 }
