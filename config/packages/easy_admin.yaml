@@ -22,6 +22,7 @@ easy_admin:
             edit:
                 fields:
                     - { property: 'email', type: 'email' }
+                    - { property: 'photoFilename', type: 'file', 'base_path': '/uploads/photos', label: 'Photo' }
                     - { property: 'createdAt', type: 'datetime', type_options: { attr: { readonly: true } } }
                     - author
                     - { property: 'email', type: 'email' }
