@@ -9,6 +9,8 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\String\Slugger\SluggerInterface;
+use function in_array;
 use function sprintf;
 
 /**
@@ -17,6 +19,8 @@ use function sprintf;
  */
 class Conference
 {
+    public const SLUG_EMPTY_VALUE = '-';
+
     /**
      * @ORM\Id()
      * @ORM\GeneratedValue()
@@ -146,5 +150,12 @@ class Conference
     public function __toString(): string
     {
         return sprintf('%s %s', $this->city, $this->year);
+    }
+
+    public function computeSlug(SluggerInterface $slugger): void
+    {
+        if (in_array($this->slug, [null, self::SLUG_EMPTY_VALUE], true)) {
+            $this->slug = $slugger->slug($this->__toString())->lower()->toString();
+        }
     }
 }
