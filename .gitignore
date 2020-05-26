@@ -3,6 +3,7 @@
 /.env.local.php
 /.env.*.local
 /config/secrets/prod/prod.decrypt.private.php
+/config/secrets/test/test.decrypt.private.php
 /public/bundles/
 /var/
 /vendor/
@@ -10,3 +11,9 @@
 
 /.idea/
 /public/uploads/photos/
+
+###> symfony/phpunit-bridge ###
+.phpunit
+.phpunit.result.cache
+/phpunit.xml
+###< symfony/phpunit-bridge ###
