@@ -38,4 +38,9 @@ class CommentRepository extends ServiceEntityRepository
             ->getQuery()
         );
     }
+
+    public function findOneByEmail(string $email): ?Comment
+    {
+        return $this->findOneBy(['email' => $email]);
+    }
 }
