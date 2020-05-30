@@ -39,9 +39,7 @@ final class CommentMessageHandler implements MessageHandlerInterface
         if ($this->spamChecker->getSpamScore($comment, $commentMessage->getContext()) === SpamChecker::SCORE_BLATANT_SPAM) {
             $comment->setState(Comment::STATE_SPAM);
         } else {
-
             $comment->setState(Comment::STATE_PUBLISHED);
-            $comment->setState(Comment::STATE_SPAM);
         }
 
         $this->entityManager->flush();
