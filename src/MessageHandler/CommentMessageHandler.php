@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\MessageHandler;
 
+use App\ImageOptimizer;
 use App\Message\CommentMessage;
 use App\Repository\CommentRepository;
 use App\SpamChecker;
@@ -14,6 +15,7 @@ use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Messenger\Handler\MessageHandlerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Workflow\WorkflowInterface;
+use function sprintf;
 
 final class CommentMessageHandler implements MessageHandlerInterface
 {
@@ -35,13 +37,19 @@ final class CommentMessageHandler implements MessageHandlerInterface
     /** @var MailerInterface */
     private $mailer;
 
+    /** @var ImageOptimizer */
+    private $imageOptimizer;
+
     /** @var string */
     private $adminEmail;
+
+    /** @var string */
+    private $photoDirectoryPath;
 
     /** @var null|LoggerInterface */
     private $logger;
 
-    public function __construct(CommentRepository $commentRepository, SpamChecker $spamChecker, EntityManagerInterface $entityManager, MessageBusInterface $messageBus, WorkflowInterface $commentStateMachine, MailerInterface $mailer, string $adminEmail, LoggerInterface $logger = null)
+    public function __construct(CommentRepository $commentRepository, SpamChecker $spamChecker, EntityManagerInterface $entityManager, MessageBusInterface $messageBus, WorkflowInterface $commentStateMachine, MailerInterface $mailer, ImageOptimizer $imageOptimizer, string $adminEmail, string $photoDirectoryPath, LoggerInterface $logger = null)
     {
         $this->commentRepository = $commentRepository;
         $this->spamChecker = $spamChecker;
@@ -49,7 +57,9 @@ final class CommentMessageHandler implements MessageHandlerInterface
         $this->messageBus = $messageBus;
         $this->workflow = $commentStateMachine;
         $this->mailer = $mailer;
+        $this->imageOptimizer = $imageOptimizer;
         $this->adminEmail = $adminEmail;
+        $this->photoDirectoryPath = $photoDirectoryPath;
         $this->logger = $logger;
     }
 
@@ -72,6 +82,12 @@ final class CommentMessageHandler implements MessageHandlerInterface
                 ->to($this->adminEmail)
                 ->context(['comment' => $comment])
             );
+        } elseif ($this->workflow->can($comment, 'optimize')) {
+            if ($comment->getPhotoFilename()) {
+                $this->imageOptimizer->resize(sprintf('%s/%s', $this->photoDirectoryPath, $comment->getPhotoFilename()));
+            }
+            $this->workflow->apply($comment, 'optimize');
+            $this->entityManager->flush();
         } elseif ($this->logger !== null) {
             $this->logger->debug('Dropping comment message', ['comment' => $comment->getId(), 'state' => $comment->getState()]);
         }
