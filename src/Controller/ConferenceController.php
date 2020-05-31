@@ -54,10 +54,11 @@ class ConferenceController extends AbstractController
      * @throws RuntimeError
      * @throws SyntaxError
      */
-    public function index(): Response
+    public function index(ConferenceRepository $conferenceRepository): Response
     {
-        return (new Response($this->twig->render('conference/index.html.twig')))
-            ->setSharedMaxAge(3600);
+        return (new Response($this->twig->render('conference/index.html.twig', [
+            'conferences' => $conferenceRepository->findAll()
+        ])))->setSharedMaxAge(3600);
     }
 
     /**
@@ -120,6 +121,6 @@ class ConferenceController extends AbstractController
     {
         return $this->render('conference/header.html.twig', [
             'conferences' => $conferenceRepository->findAll()
-        ]);
+        ])->setSharedMaxAge(3600);
     }
 }
