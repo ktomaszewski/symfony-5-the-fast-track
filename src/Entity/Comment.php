@@ -18,6 +18,8 @@ class Comment
 {
     public const STATE_SUBMITTED = 'submitted';
     public const STATE_PUBLISHED = 'published';
+    public const STATE_SPAM = 'spam';
+    public const STATE_REJECTED = 'rejected';
 
     /**
      * @ORM\Id()

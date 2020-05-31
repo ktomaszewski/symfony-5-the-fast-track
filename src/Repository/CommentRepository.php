@@ -6,10 +6,13 @@ namespace App\Repository;
 
 use App\Entity\Comment;
 use App\Entity\Conference;
+use DateTime;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Common\Collections\Criteria;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
+use function sprintf;
 
 /**
  * @method Comment|null find($id, $lockMode = null, $lockVersion = null)
@@ -19,6 +22,8 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class CommentRepository extends ServiceEntityRepository
 {
+    private const DAYS_BEFORE_REJECTED_REMOVAL = 7;
+
     public const PAGINATOR_PER_PAGE = 2;
 
     public function __construct(ManagerRegistry $registry)
@@ -44,5 +49,33 @@ class CommentRepository extends ServiceEntityRepository
     public function findOneByEmail(string $email): ?Comment
     {
         return $this->findOneBy(['email' => $email]);
+    }
+
+    public function countOldRejected(): int
+    {
+        return $this->getOldRejectedQueryBuilder()
+            ->select('COUNT(c.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    public function deleteOldRejected(): int
+    {
+        return $this->getOldRejectedQueryBuilder()
+            ->delete()
+            ->getQuery()
+            ->execute();
+    }
+
+    private function getOldRejectedQueryBuilder(): QueryBuilder
+    {
+        return $this->createQueryBuilder('c')
+            ->andWhere('c.state = :state_rejected OR c.state = :state_spam')
+            ->andWhere('c.createdAt < :date')
+            ->setParameters([
+                'state_rejected' => Comment::STATE_REJECTED,
+                'state_spam'     => Comment::STATE_SPAM,
+                'date'           => new DateTime(sprintf('-%ddays', self::DAYS_BEFORE_REJECTED_REMOVAL))
+            ]);
     }
 }
