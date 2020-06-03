@@ -4,15 +4,27 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use ApiPlatform\Core\Annotation\ApiFilter;
+use ApiPlatform\Core\Annotation\ApiResource;
+use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\SearchFilter;
 use App\Repository\CommentRepository;
 use DateTime;
 use DateTimeInterface;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * @ORM\Entity(repositoryClass=CommentRepository::class)
  * @ORM\HasLifecycleCallbacks()
+ *
+ * @ApiResource(
+ *     collectionOperations={"get"={"normalization_context"={"groups"="comment:list"}}},
+ *     itemOperations={"get"={"normalization_context"={"groups"="comment:item"}}},
+ *     order={"createdAt"="DESC"},
+ *     paginationEnabled=false
+ * )
+ * @ApiFilter(SearchFilter::class, properties={"conference": "exact"})
  */
 class Comment
 {
@@ -26,6 +38,8 @@ class Comment
      * @ORM\GeneratedValue()
      * @ORM\Column(type="integer")
      * @var int
+     *
+     * @Groups({"comment:list", "comment:item"})
      */
     private $id;
 
@@ -33,12 +47,16 @@ class Comment
      * @ORM\Column(type="string", length=255)
      * @Assert\NotBlank()
      * @var string
+     *
+     * @Groups({"comment:list", "comment:item"})
      */
     private $author;
 
     /**
      * @ORM\Column(type="text")
      * @var string
+     *
+     * @Groups({"comment:list", "comment:item"})
      */
     private $text;
 
@@ -47,12 +65,16 @@ class Comment
      * @Assert\NotBlank()
      * @Assert\Email()
      * @var string
+     *
+     * @Groups({"comment:list", "comment:item"})
      */
     private $email;
 
     /**
      * @ORM\Column(type="datetime")
      * @var DateTimeInterface
+     *
+     * @Groups({"comment:list", "comment:item"})
      */
     private $createdAt;
 
@@ -60,12 +82,16 @@ class Comment
      * @ORM\ManyToOne(targetEntity=Conference::class, inversedBy="comments")
      * @ORM\JoinColumn(nullable=false)
      * @var Conference
+     *
+     * @Groups({"comment:list", "comment:item"})
      */
     private $conference;
 
     /**
      * @ORM\Column(type="string", length=255, nullable=true)
      * @var null|string
+     *
+     * @Groups({"comment:list", "comment:item"})
      */
     private $photoFilename;
 
