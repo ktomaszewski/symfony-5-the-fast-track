@@ -11,7 +11,6 @@ use App\Repository\CommentRepository;
 use App\SpamChecker;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
-use Symfony\Bridge\Twig\Mime\NotificationEmail;
 use Symfony\Component\Messenger\Handler\MessageHandlerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Notifier\NotifierInterface;
@@ -40,8 +39,6 @@ final class CommentMessageHandler implements MessageHandlerInterface
 
     /** @var ImageOptimizer */
     private $imageOptimizer;
-
-
 
     /** @var string */
     private $photoDirectoryPath;
@@ -75,7 +72,8 @@ final class CommentMessageHandler implements MessageHandlerInterface
             $this->entityManager->flush();
             $this->messageBus->dispatch($commentMessage);
         } elseif ($this->workflow->can($comment, 'publish') || $this->workflow->can($comment, 'publish_ham')) {
-            $this->notifier->send(new CommentReviewNotification($comment), ...$this->notifier->getAdminRecipients());
+            $notification = new CommentReviewNotification($comment, $commentMessage->getReviewUrl());
+            $this->notifier->send($notification, ...$this->notifier->getAdminRecipients());
         } elseif ($this->workflow->can($comment, 'optimize')) {
             if ($comment->getPhotoFilename()) {
                 $this->imageOptimizer->resize(sprintf('%s/%s', $this->photoDirectoryPath, $comment->getPhotoFilename()));

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Notification;
 
 use App\Entity\Comment;
+use Symfony\Component\Notifier\Bridge\Slack\Block\SlackActionsBlock;
 use Symfony\Component\Notifier\Bridge\Slack\Block\SlackDividerBlock;
 use Symfony\Component\Notifier\Bridge\Slack\Block\SlackSectionBlock;
 use Symfony\Component\Notifier\Bridge\Slack\SlackOptions;
@@ -15,16 +16,22 @@ use Symfony\Component\Notifier\Notification\EmailNotificationInterface;
 use Symfony\Component\Notifier\Notification\Notification;
 use Symfony\Component\Notifier\Recipient\Recipient;
 use function preg_match;
+use function sprintf;
 
 final class CommentReviewNotification extends Notification implements EmailNotificationInterface, ChatNotificationInterface
 {
     /** @var Comment */
     private $comment;
 
-    public function __construct(Comment $comment)
+    /** @var string */
+    private $reviewUrl;
+
+    public function __construct(Comment $comment, string $reviewUrl)
     {
         parent::__construct('NEw comment posted');
+
         $this->comment = $comment;
+        $this->reviewUrl = $reviewUrl;
     }
 
     public function asEmailMessage(Recipient $recipient, string $transport = null): ?EmailMessage
@@ -65,6 +72,9 @@ final class CommentReviewNotification extends Notification implements EmailNotif
             ->block(new SlackDividerBlock())
             ->block((new SlackSectionBlock())
                 ->text(sprintf('%s (%s) says: %s', $this->comment->getAuthor(), $this->comment->getEmail(), $this->comment->getText()))
+            )->block((new SlackActionsBlock())
+                ->button('Accept', $this->reviewUrl, 'primary')
+                ->button('Reject', sprintf('%s?reject=1', $this->reviewUrl), 'danger')
             )
         );
 
