@@ -18,7 +18,10 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Component\Notifier\Notification\Notification;
+use Symfony\Component\Notifier\NotifierInterface;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Twig\Environment;
 use Twig\Error\LoaderError;
 use Twig\Error\RuntimeError;
@@ -69,37 +72,43 @@ class ConferenceController extends AbstractController
      * @throws SyntaxError
      * @throws Exception
      */
-    public function show(Request $request, Conference $conference, CommentRepository $commentRepository, string $photoDirectoryPath): Response
+    public function show(Request $request, Conference $conference, CommentRepository $commentRepository, NotifierInterface $notifier, string $photoDirectoryPath): Response
     {
         $comment = new Comment();
         $form = $this->createForm(CommentFormType::class, $comment);
         $form->handleRequest($request);
-        if ($form->isSubmitted() && $form->isValid()) {
-            $comment->setConference($conference);
-            /** @var null|UploadedFile $photo */
-            $photo = $form['photo']->getData();
-            if ($photo !== null) {
-                $filename = sprintf('%s.%s', bin2hex(random_bytes(6)), $photo->guessExtension());
-                try {
-                    $photo->move($photoDirectoryPath, $filename);
-                } catch (FileException $exception) {
-                    // unable to upload the photo, give up
+        if ($form->isSubmitted()) {
+            if ($form->isValid()) {
+                $comment->setConference($conference);
+                /** @var null|UploadedFile $photo */
+                $photo = $form['photo']->getData();
+                if ($photo !== null) {
+                    $filename = sprintf('%s.%s', bin2hex(random_bytes(6)), $photo->guessExtension());
+                    try {
+                        $photo->move($photoDirectoryPath, $filename);
+                    } catch (FileException $exception) {
+                        // unable to upload the photo, give up
+                    }
+                    $comment->setPhotoFilename($filename);
                 }
-                $comment->setPhotoFilename($filename);
+
+                $this->entityManager->persist($comment);
+                $this->entityManager->flush();
+
+                $context = [
+                    'user_ip'    => $request->getClientIp(),
+                    'user_agent' => $request->headers->get('user-agent'),
+                    'referrer'   => $request->headers->get('referer'),
+                    'permalink'  => $request->getUri()
+                ];
+                $reviewUrl = $this->generateUrl('review_comment', ['id' => $comment->getId()], UrlGeneratorInterface::ABSOLUTE_URL);
+                $this->messageBus->dispatch(new CommentMessage($comment->getId(), $reviewUrl));
+                $notifier->send(new Notification('Thank you for the feedback; your comment will be posted after moderation', ['browser']));
+
+                return $this->redirectToRoute('conference', ['slug' => $conference->getSlug()]);
             }
 
-            $this->entityManager->persist($comment);
-            $this->entityManager->flush();
-
-            $context = [
-                'user_ip'    => $request->getClientIp(),
-                'user_agent' => $request->headers->get('user-agent'),
-                'referrer'   => $request->headers->get('referer'),
-                'permalink'  => $request->getUri()
-            ];
-            $this->messageBus->dispatch(new CommentMessage($comment->getId(), $context));
-
-            return $this->redirectToRoute('conference', ['slug' => $conference->getSlug()]);
+            $notifier->send(new Notification('Can you check your submission? There are some problems with it', ['browser']));
         }
 
         $offset = $request->query->getInt('offset', 0);
