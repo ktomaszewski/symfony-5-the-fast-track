@@ -16,7 +16,7 @@ final class ConferenceControllerTest extends WebTestCase
     public function testIndex(): void
     {
         $client = static::createClient();
-        $client->request(Request::METHOD_GET, '/');
+        $client->request(Request::METHOD_GET, '/en/');
 
         static::assertResponseIsSuccessful();
         static::assertSelectorTextContains('h2', 'Give your feedback');
@@ -27,7 +27,7 @@ final class ConferenceControllerTest extends WebTestCase
         $email = 'me@autmat.ed';
 
         $client = static::createClient();
-        $client->request(Request::METHOD_GET, '/conference/amsterdam-2019');
+        $client->request(Request::METHOD_GET, '/en/conference/amsterdam-2019');
         $client->submitForm('Submit', [
             'comment_form[author]' => 'Fabien',
             'comment_form[text]'   => 'Some feedback from an automated functional test',
@@ -43,13 +43,13 @@ final class ConferenceControllerTest extends WebTestCase
         $entityManager->flush();
 
         $client->followRedirect();
-        static::assertSelectorExists('div:contains("There are 3 comments")');
+        static::assertSelectorExists('div:contains("There are 2 comments")');
     }
 
     public function testConferencePage(): void
     {
         $client = static::createClient();
-        $crawler = $client->request(Request::METHOD_GET, '/');
+        $crawler = $client->request(Request::METHOD_GET, '/en/');
 
         $this->assertCount(2, $crawler->filter('h4'));
 
@@ -58,6 +58,6 @@ final class ConferenceControllerTest extends WebTestCase
         static::assertPageTitleContains('Amsterdam');
         static::assertResponseIsSuccessful();
         static::assertSelectorTextContains('h2', 'Amsterdam 2019');
-        static::assertSelectorExists('div:contains("There are 2 comments")');
+        static::assertSelectorExists('div:contains("There is one comment")');
     }
 }
